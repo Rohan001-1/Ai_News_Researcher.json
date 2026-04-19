@@ -1,0 +1,374 @@
+{
+  "name": "Ai News Fiinder",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        400
+      ],
+      "id": "c714d91f-282b-446d-b0b3-4367beb81d8d",
+      "name": "Mistral Cloud Chat Model",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "9N6eWSeCZ5atoxbs",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        448,
+        96
+      ],
+      "id": "02089181-7f87-4fed-8c05-75a8ade1fa50",
+      "name": "Mistral Cloud Chat Model1",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "9N6eWSeCZ5atoxbs",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "query": "=latest AI agents tools released today\nnew AI model released today 2026\nAI automation tools launch this week\nAI agent framework update today",
+        "options": {
+          "include_images": true
+        }
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavilyTool",
+      "typeVersion": 1,
+      "position": [
+        160,
+        400
+      ],
+      "id": "80d8e934-5022-4053-b73d-838b389d5197",
+      "name": "Search in Tavily",
+      "credentials": {
+        "tavilyApi": {
+          "id": "JVqJ337zBHhKDIsd",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=new_agent_memory"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        32,
+        400
+      ],
+      "id": "c5dc8740-29cb-4b44-8b2b-7ffd684aa7e9",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            },
+            {
+              "triggerAtHour": 19
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -320,
+        176
+      ],
+      "id": "b8dd6566-204f-4abe-9a0e-a9e5dd8bf0d5",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.error }}",
+        "options": {
+          "systemMessage": "You are an Error Alert Agent for an n8n automation workflow.\n\nYour only job is to read the raw error data, understand what went wrong, and write a short WhatsApp alert message in English so the workflow owner knows exactly what happened without needing to open n8n.\n\nINPUT\nRaw n8n error data containing: workflow name, node name where error occurred, error message, error type or code, execution ID.\n\nYOUR TASK\n1. Read the error message carefully\n2. Identify what failed and why it likely failed\n3. Suggest one quick fix in simple plain words\n4. Write the WhatsApp message in the exact format below\n\nOUTPUT FORMAT\n\n🚨 Workflow Alert!\n\n🕐 Time: [current time — use the Date and Time tool]\n\n❌ What Went Wrong:\n1-2 lines in plain English — simple explanation, no technical jargon. Example: \"Tavily tool did not return a response\" or \"Green API connection timed out\"\n\n✅ Suggested Fix:\n[One short actionable fix]\n\nSTRICT RULES\n- Output ONLY the WhatsApp message — nothing else\n- No JSON, no backticks, no \"Here is the message\"\n- Maximum 10 lines total — keep it short\n- Never expose full raw error stack trace\n- Never make up execution details — use only what is in the input\n- If error reason is unclear — write: \"A technical error occurred, please check n8n manually\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        368,
+        384
+      ],
+      "id": "6ce5b3ad-6a49-4f9d-9c6d-65cdcb93ce18",
+      "name": "Error Understander"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        384,
+        608
+      ],
+      "id": "2d63e169-56d9-4831-809e-938db66e242b",
+      "name": "Mistral Cloud Chat Model2",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "9N6eWSeCZ5atoxbs",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Run scheduled news fetch for today: {{ $now.toFormat('dd MMM yyyy') }}",
+        "options": {
+          "systemMessage": "You are an AI News Hunter Agent. You run on a schedule twice daily. Your job is to find today's latest AI news, check if it has already been sent before, and prepare clean structured summaries for the formatting node.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSTEP 1 — SEARCH USING TAVILY\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nCall the Tavily tool one query at a time until you get at least 3 fresh results. Use these queries in order:\n- \"latest AI agents tools released today\"\n- \"new AI model launched today 2026\"\n- \"AI automation news today\"\n- \"AI agent framework update today\"\n\nCollect 3 to 5 news items. Each item must have:\n- title\n- source URL\n- 1 line summary of what happened\n- why it matters for AI agent builders\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSTEP 2 — MEMORY DEDUPLICATION CHECK\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nCheck your memory for previously sent news titles.\n- If a title is already in memory — skip it and search again with a different query\n- If a title is new — keep it\n- If all results are old — try 2 more Tavily searches before giving up\n- Goal: always deliver minimum 3 fresh news items\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSTEP 3 — REWRITE IN PLAIN ENGLISH\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nRewrite each fresh news item in simple plain English. Rules:\n- Keep it simple — explain as if talking to a smart friend, not an academic\n- No unexplained jargon\n- Each summary: 2 to 3 sentences maximum\n- Focus on: what launched, what it can do, and why it is useful for AI agent builders\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nOUTPUT FORMAT\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nOutput ONLY this JSON. No extra text before or after:\n\n{\n  \"date\": \"DD MMM YYYY\",\n  \"news_items\": [\n    {\n      \"id\": 1,\n      \"title\": \"Original English title\",\n      \"source\": \"Source name (e.g. TechCrunch)\",\n      \"url\": \"https://...\",\n      \"summary\": \"2 to 3 sentence plain English summary\",\n      \"agent_builder_value\": \"Why this is useful for AI agent builders...\"\n    }\n  ],\n  \"total_fresh_news\": 3,\n  \"search_queries_used\": [\"query1\", \"query2\"]\n}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSTRICT RULES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n- Always call Tavily first before doing anything else\n- Never make up news or hallucinate URLs\n- Never skip the memory deduplication check\n- If truly no fresh news found after 4 searches — set total_fresh_news: 0 and news_items: []\n- Output ONLY valid JSON — no markdown, no backticks, no explanation",
+          "maxIterations": 15
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -32,
+        176
+      ],
+      "id": "b499a35a-bc5f-4b7f-ba29-120e82a49979",
+      "name": "News Finder And Definer",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.output }}",
+        "options": {
+          "systemMessage": "You are a WhatsApp Content Formatter Agent. You receive structured JSON data containing fresh AI news summaries. Your only job is to convert this JSON into a clean, well-formatted WhatsApp message for an AI agent builder audience.\n\nINPUT\nA JSON object with: date, news_items (each containing title, hinglish_summary, agent_builder_value, source, url), total_fresh_news.\n\nOUTPUT FORMAT\nGenerate the WhatsApp message in this exact structure:\n\n🤖 AI News — [DATE]\nToday's top AI updates, just for agent builders 🔥\n\n━━━━━━━━━━━━━━━━━━━\n\n📌 *News [NUMBER]: [SHORT TITLE IN CAPS]*\n\n[hinglish_summary from JSON]\n\n💡 Why It Matters for Agent Builders:\n[agent_builder_value from JSON]\n\n🔗 Source: [source name]\n\n━━━━━━━━━━━━━━━━━━━\n\n[Repeat above block for each news item]\n\n━━━━━━━━━━━━━━━━━━━\n\n🛠️ *Today's Agent Building Tip*\n[Write 1 practical actionable tip for n8n or AI agent builders. Rotate topics: prompt engineering, n8n node tricks, Pinecone optimization, webhook debugging, API cost saving, memory management, error handling, etc.]\n\n━━━━━━━━━━━━━━━━━━━\n\n📊 *Today's Summary*\n- 📰 Fresh News: [total_fresh_news] items\n- 📅 Date: [date]\n- 🎯 Focus: AI Agents and Automation\n\n━━━━━━━━━━━━━━━━━━━\n\nSTRICT RULES\n- Output ONLY the WhatsApp message — nothing else before or after\n- No JSON, no backticks, no explanation, no \"Here is your message\"\n- Use asterisks for bold headings only\n- No HTML, no markdown headers\n- Keep each news block under 6 lines\n- Total message under 600 words\n- If total_fresh_news is 0 — send exactly this: \"🤖 No fresh AI news found today! We will try again next time. Radhey Radhey 💖\"\n- Never expose raw URLs — use \"Source: [name]\" format only\n- The Agent Building Tip must be different every day — never repeat the same tip format"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        368,
+        -128
+      ],
+      "id": "a98461b7-1adf-4beb-a3aa-c24bef2c389f",
+      "name": "Data Formater"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTimeTool",
+      "typeVersion": 2,
+      "position": [
+        512,
+        608
+      ],
+      "id": "fc75eb60-360f-4c86-8e18-e4dd7a3a7241",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://7107.api.greenapi.com/waInstance[Enter Your Instance Id]/sendMessage/[Api token instance]",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "Enter_Your_chat_id@c.us"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        720,
+        -16
+      ],
+      "id": "cd00c477-f9b6-4f87-90f0-11c9a1cc331a",
+      "name": "Success HTTP"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://7107.api.greenapi.com/waInstance[Enter Your Instance Id]/sendMessage/[Api token instance]",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "Enter_Your_Chat_id@c.us"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        720,
+        384
+      ],
+      "id": "34f137e2-2d03-49b1-87e0-7ffd7b4a13d1",
+      "name": "Error HTTP"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Mistral Cloud Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "News Finder And Definer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Data Formater",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search in Tavily": {
+      "ai_tool": [
+        [
+          {
+            "node": "News Finder And Definer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "News Finder And Definer",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Error Understander",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Understander": {
+      "main": [
+        [
+          {
+            "node": "Error HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News Finder And Definer": {
+      "main": [
+        [
+          {
+            "node": "Data Formater",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Understander",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Formater": {
+      "main": [
+        [
+          {
+            "node": "Success HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "ai_tool": [
+        [
+          {
+            "node": "Error Understander",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "News Finder And Definer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "eebc4b99-976c-4523-a673-f2a1daeeb314",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fc6057e90fbe4aa1be64752f59e776be28983f0cc603f5c19175e814feba5a3b"
+  },
+  "id": "7QVJ9f4MhSD2n6o1",
+  "tags": []
+}
